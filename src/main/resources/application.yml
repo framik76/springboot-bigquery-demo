@@ -1,0 +1,16 @@
+gcp:
+  bigquery:
+    dataset:
+      name: ${GCP_BIGQUERY_DATASET_NAME}
+    table:
+      name: ${GCP_BIGQUERY_TABLE_NAME}  
+  project:
+    id: ${GCP_PROJECT_ID}
+  sql:
+    db:
+      name: ${GCP_SQL_DB_NAME}
+    instance:
+      id: ${GCP_SQL_INSTANCE_ID}
+    region: ${GCP_SQL_REGION}  
+    table:
+      name: ${GCP_SQL_TABLE_NAME}
