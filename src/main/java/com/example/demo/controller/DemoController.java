@@ -1,5 +1,8 @@
 package com.example.demo.controller;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,7 +41,13 @@ public class DemoController {
         } catch (InterruptedException e) {
             log.error("InterruptedException: ", e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
-        }        
+        } catch (FileNotFoundException e) {
+            log.error("FileNotFoundException: ", e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        } catch (IOException e) {
+            log.error("IOException: ", e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }      
     }
 
     @DeleteMapping("/users-audit")
@@ -54,6 +63,9 @@ public class DemoController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         } catch (InterruptedException e) {
             log.error("InterruptedException: ", e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        } catch (IOException e) {
+            log.error("IOException: ", e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }        
     }
@@ -72,6 +84,9 @@ public class DemoController {
         } catch (InterruptedException e) {
             log.error("InterruptedException: ", e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
+        } catch (IOException e) {
+            log.error("IOException: ", e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }        
     }
     
@@ -87,6 +102,9 @@ public class DemoController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         } catch (InterruptedException e) {
             log.error("InterruptedException: ", e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        } catch (IOException e) {
+            log.error("IOException: ", e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }        
     }

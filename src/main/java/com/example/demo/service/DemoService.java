@@ -1,6 +1,10 @@
 package com.example.demo.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -8,11 +12,13 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.exceptions.DatasetNotFoundException;
 import com.example.demo.model.UserAudit;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.DatasetId;
+import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.TableResult;
 
@@ -43,12 +49,27 @@ public class DemoService {
     @Value("${gcp.sql.table.name}")
     String sqlTableName;
 
+    @Value("${gcp.credentials.encoded-key}")
+    String encodedKey;
+
     BigQuery bigQuery;
 
-    public List<UserAudit> getUserAuditList (int page, int pageSize) throws DatasetNotFoundException, BigQueryException, InterruptedException {
+    protected BigQuery getBigQueryService () throws IOException {
         try {
-            bigQuery = BigQueryOptions.getDefaultInstance().getService();                
-            Dataset dataset = bigQuery.getDataset(DatasetId.of(datasetName));
+            var credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(Base64.getDecoder().decode(encodedKey)));
+            bigQuery = BigQueryOptions.newBuilder()
+                .setProjectId(projectId)
+                .setCredentials(credentials)
+                .build().getService();
+        } catch (IOException e) {
+            throw e;
+        }
+        return bigQuery;
+    }
+
+    public List<UserAudit> getUserAuditList (int page, int pageSize) throws DatasetNotFoundException, BigQueryException, InterruptedException, FileNotFoundException, IOException {
+        try {                
+            Dataset dataset = this.getBigQueryService().getDataset(DatasetId.of(datasetName));
             if (dataset != null) {
                 //query to a existent bigquery table
                 String query = "SELECT id\n"
@@ -65,16 +86,14 @@ public class DemoService {
             } else {
                 throw new DatasetNotFoundException("Dataset not found.");
             }
-        } catch (BigQueryException e) {
+        } catch (BigQueryException | IOException  e) {
             throw e;
-        }
-                
+        }                 
     }
 
-    public void cleanUserAuditTable () throws BigQueryException, DatasetNotFoundException, InterruptedException {
+    public void cleanUserAuditTable () throws BigQueryException, DatasetNotFoundException, InterruptedException, IOException {
         try {
-            bigQuery = BigQueryOptions.getDefaultInstance().getService();                
-            Dataset dataset = bigQuery.getDataset(DatasetId.of(datasetName));
+            Dataset dataset = getBigQueryService().getDataset(DatasetId.of(datasetName));
             if (dataset != null) {
                 //query to a existent bigquery table
                 String query = "DELETE FROM `"
@@ -94,10 +113,9 @@ public class DemoService {
         }
     }
 
-    public void insertIntoUserAuditTable () throws BigQueryException, DatasetNotFoundException, InterruptedException {
+    public void insertIntoUserAuditTable () throws BigQueryException, DatasetNotFoundException, InterruptedException, IOException {
         try {
-            bigQuery = BigQueryOptions.getDefaultInstance().getService();                
-            Dataset dataset = bigQuery.getDataset(DatasetId.of(datasetName));
+            Dataset dataset = getBigQueryService().getDataset(DatasetId.of(datasetName));
             if (dataset != null) {
                 //query to a existent bigquery table
                 // insert into `users_audit_eu_west3.users-audit` (id)
@@ -116,15 +134,14 @@ public class DemoService {
             } else {
                 throw new DatasetNotFoundException("Dataset not found.");
             }
-        } catch (BigQueryException e) {
+        } catch (BigQueryException | IOException e) {
             throw e;
         }
     }
 
-    public List<UserAudit> getUserAuditListUsingExternalQuery (int page, int pageSize) throws DatasetNotFoundException, BigQueryException, InterruptedException {
+    public List<UserAudit> getUserAuditListUsingExternalQuery (int page, int pageSize) throws DatasetNotFoundException, BigQueryException, InterruptedException, IOException {
         try {
-            bigQuery = BigQueryOptions.getDefaultInstance().getService();    
-            Dataset dataset = bigQuery.getDataset(DatasetId.of(datasetName));
+            Dataset dataset = getBigQueryService().getDataset(DatasetId.of(datasetName));
             if (dataset != null) {
                 // query to the cloud sql table, it create a temporary bigquery table         
                 // non rispetta l'ordine del risultato della query esterna, anche se la tua query esterna include ORDER BY.
@@ -135,45 +152,44 @@ public class DemoService {
             } else {
                 throw new DatasetNotFoundException("Dataset not found.");
             }
-        } catch (BigQueryException e) {
+        } catch (BigQueryException | IOException e) {
             throw e;
         }
                 
     }
     
-    private List<UserAudit> query(String query) throws BigQueryException, InterruptedException {
+    protected List<UserAudit> query(String query) throws BigQueryException, InterruptedException, FileNotFoundException, IOException {
         var userAuditList = new ArrayList<UserAudit>();        
         try {
-            BigQuery bigquery = BigQueryOptions.getDefaultInstance().getService();
-
             QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
-
-            TableResult results = bigquery.query(queryConfig);
-            log.info("query performed with {} results", results.getTotalRows());
-
-            results
-                .iterateAll()
-                .forEach(row -> {
-                    var userAudit = new UserAudit();
-                    userAudit.setId(row.get("id").getStringValue());
-                    userAuditList.add(userAudit);
-                });
-        } catch (BigQueryException | InterruptedException e) {
+            var jobId = JobInfo.newBuilder(queryConfig).build().getJobId();
+            BigQuery bigQuery = getBigQueryService();
+            TableResult results = bigQuery.query(queryConfig, jobId);
+            if (results != null) {
+                log.info("query performed with {} results", results.getTotalRows());
+                results
+                    .iterateAll()
+                    .forEach(row -> {
+                        var userAudit = new UserAudit();
+                        userAudit.setId(row.get("id").getStringValue());
+                        userAuditList.add(userAudit);
+                    });
+            }
+        } catch (BigQueryException | InterruptedException | IOException e) {
             log.error("Query not performed \n" + e.toString());
             throw e;
         }
+
         return userAuditList;
     }
 
-    private void executeQuery(String query) throws BigQueryException, InterruptedException {
+    private void executeQuery(String query) throws BigQueryException, InterruptedException, IOException {
         try {
-            BigQuery bigquery = BigQueryOptions.getDefaultInstance().getService();
-
             QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
 
-            TableResult results = bigquery.query(queryConfig);
+            TableResult results = getBigQueryService().query(queryConfig);
             log.info("query performed with {} results", results.getTotalRows());
-        } catch (BigQueryException | InterruptedException e) {
+        } catch (BigQueryException | InterruptedException | IOException e) {
             log.error("Query not performed \n" + e.toString());
             throw e;
         }

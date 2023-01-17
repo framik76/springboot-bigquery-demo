@@ -6,6 +6,8 @@ gcp:
       name: ${GCP_BIGQUERY_TABLE_NAME}  
   project:
     id: ${GCP_PROJECT_ID}
+  credentials:
+    encoded-key: ${GCP_CREDENTIALS_ENCODED_KEY}
   sql:
     db:
       name: ${GCP_SQL_DB_NAME}
