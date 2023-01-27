@@ -68,7 +68,7 @@ public class Toolbox {
     }
 
     /**
-     * The method runBqQuery is a generic method to call any BigQuery Sql. It will return the result
+     * The method runQuery is a generic method to call any BigQuery Sql. It will return the result
      * of BigQuery Sql as an object of TableResult.
      *
      * @param query : sql query to execute in bigquery

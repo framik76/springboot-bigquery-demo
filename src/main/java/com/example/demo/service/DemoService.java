@@ -49,6 +49,17 @@ public class DemoService {
     @Autowired
     Toolbox toolbox;
 
+    /**
+     * The method getUserAuditList make a query to an existent bigQuery table.
+     *
+     * @param page : a integer indicating the page (start from 0)
+     * @param pageSize : a integer indicating the items returned
+     * @return List<UserAudit>
+     * @throws DatasetNotFoundException
+     * @throws BigQueryException
+     * @throws InterruptedException
+     * @throws IOException
+     */
     public List<UserAudit> getUserAuditList (int page, int pageSize) throws DatasetNotFoundException, BigQueryException, InterruptedException, IOException {
         try {
             Dataset dataset = toolbox.getDataset();
@@ -74,7 +85,14 @@ public class DemoService {
     }
 
 
-
+    /**
+     * The method cleanUserAuditTable make a query to delete all records an existent bigQuery table.
+     *
+     * @throws DatasetNotFoundException
+     * @throws BigQueryException
+     * @throws InterruptedException
+     * @throws IOException
+     */
     public void cleanUserAuditTable () throws BigQueryException, DatasetNotFoundException, InterruptedException, IOException {
         try {
             Dataset dataset = toolbox.getDataset(DatasetId.of(datasetName));
@@ -97,6 +115,14 @@ public class DemoService {
         }
     }
 
+    /**
+     * The method insertIntoUserAuditTable make a query to insert all records of a cloud sql table into an existent bigQuery table.
+     *
+     * @throws DatasetNotFoundException
+     * @throws BigQueryException
+     * @throws InterruptedException
+     * @throws IOException
+     */
     public void insertIntoUserAuditTable () throws BigQueryException, DatasetNotFoundException, InterruptedException, IOException {
         try {
             Dataset dataset = toolbox.getDataset(DatasetId.of(datasetName));
@@ -121,12 +147,23 @@ public class DemoService {
         }
     }
 
+    /**
+     * The method getUserAuditListUsingExternalQuery make a query to a cloud sql table returning a temporary bigQuery table.
+     *
+     * @param page : a integer indicating the page (start from 0)
+     * @param pageSize : a integer indicating the items returned
+     * @return List<UserAudit>
+     * @throws DatasetNotFoundException
+     * @throws BigQueryException
+     * @throws InterruptedException
+     * @throws IOException
+     */
     public List<UserAudit> getUserAuditListUsingExternalQuery (int page, int pageSize) throws DatasetNotFoundException, BigQueryException, InterruptedException, IOException {
         try {
             Dataset dataset = toolbox.getDataset(DatasetId.of(datasetName));
             if (dataset != null) {
                 // query to the cloud sql table, it creates a temporary bigquery table
-                // non rispetta l'ordine del risultato della query esterna, anche se la tua query esterna include ORDER BY.
+                // the order of the result of the external query is not respected even if the external query include ORDER BY clause.
                 String query = "SELECT * FROM EXTERNAL_QUERY('" + projectId + "." + region + "." + cloudSqlInstanceId + "', 'SELECT id FROM " + sqlDbName + "." + sqlTableName + " limit " + 
                 pageSize + " offset " + (page * pageSize) +"')";
                 log.info("query: {}", query);        
