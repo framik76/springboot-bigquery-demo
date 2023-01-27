@@ -16,3 +16,5 @@ Springboot demo microservice with some api to get data using Google BigQuery ser
 - GCP_SQL_INSTANCE_ID: The GCP SQL instance id
 - GCP_SQL_DB_NAME: The name of the SQL DB to get data from
 - GCP_SQL_TABLE_NAME: The name of the SQL table to get data from
+
+<a href="https://docs.google.com/presentation/d/18nZatJQa6zzUP61EUIznV5nWHHrySotkBgy4QladrCU/edit?usp=sharing">Presentation</a>

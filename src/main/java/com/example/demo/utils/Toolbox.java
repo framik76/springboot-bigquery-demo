@@ -46,7 +46,8 @@ public class Toolbox {
 
     private BigQuery getBigQueryService () throws IOException {
         try {
-            var credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(Base64.getDecoder().decode(encodedKey)));
+            var decodedKey = Base64.getDecoder().decode(encodedKey);
+            var credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(decodedKey));
             bigQuery = BigQueryOptions.newBuilder()
                     .setProjectId(projectId)
                     .setCredentials(credentials)
